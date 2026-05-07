@@ -1,0 +1,8 @@
+# Detectadas desde imports del proyecto (Django + exportador)
+Django>=4.2,<6
+simplekml
+reportlab
+svglib
+folium
+PyQt6
+oracledb
