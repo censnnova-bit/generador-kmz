@@ -6,3 +6,4 @@ svglib
 folium
 PyQt6
 oracledb
+python-dotenv>=1.0

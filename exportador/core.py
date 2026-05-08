@@ -6,39 +6,18 @@ import simplekml
 import oracledb
 import traceback
 from xml.sax.saxutils import escape
+from dotenv import load_dotenv
 from .queries import queries
 
-# 🔍 Diagnóstico inicial
 
+if getattr(sys, "frozen", False):
+    _APP_ROOT = os.path.dirname(sys.executable)
+else:
+    _APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv(os.path.join(_APP_ROOT, ".env"))
 
 print("✅ Iniciando KMZ Generator...")
-
-try:
-    if oracledb.is_thin_mode():
-        print("⚠️ Cliente Oracle está en modo thin. Intentando cambiar a thick...")
-        oracledb.init_oracle_client(lib_dir=r"C:\oracle\instantclient_21_19")
-        print("✅ Cliente Oracle inicializado en modo thick.")
-    else:
-        print("✅ Cliente Oracle ya está en modo thick.")
-except Exception as e:
-    print("❌ Error al inicializar Oracle Client:", e)
-
-
-
-# Inicializar Oracle Client solo si todavía no está en thick mode
-try:
-    if oracledb.is_thin_mode():
-        BASE_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
-        local_client = os.path.join(BASE_DIR, "instantclient_21_19")
-
-        if os.path.isdir(local_client):
-            oracledb.init_oracle_client(lib_dir=local_client)
-        else:
-            oracledb.init_oracle_client(lib_dir=r"C:\oracle\instantclient_21_19")
-
-except oracledb.ProgrammingError as e:
-    if "DPY-2017" not in str(e):
-        print("❌ Error al inicializar Oracle Client:", e)
+print("✅ Oracle oracledb en modo thin (sin Instant Client nativo).")
 
 
 # -----------------------------
@@ -76,8 +55,28 @@ def limpiar_nombre(nombre):
 # Oracle helpers
 
 def conectar_oracle():
-    dsn = oracledb.makedsn("EPM-PO18", 1521, service_name="GENESTB")
-    return oracledb.connect(user="CENS_CONSULTA", password="C3N5C0N5ULT4", dsn=dsn)
+    host = os.environ.get("ORACLE_HOST")
+    port = os.environ.get("ORACLE_PORT", "1521")
+    service = os.environ.get("ORACLE_SERVICE_NAME")
+    user = os.environ.get("ORACLE_USER")
+    password = os.environ.get("ORACLE_PASSWORD")
+    missing = [
+        name
+        for name, val in (
+            ("ORACLE_HOST", host),
+            ("ORACLE_SERVICE_NAME", service),
+            ("ORACLE_USER", user),
+            ("ORACLE_PASSWORD", password),
+        )
+        if not val
+    ]
+    if missing:
+        raise RuntimeError(
+            "Faltan variables de entorno Oracle: %s (defínalas en .env)"
+            % ", ".join(missing)
+        )
+    dsn = oracledb.makedsn(host, int(port), service_name=service)
+    return oracledb.connect(user=user, password=password, dsn=dsn)
 
 def ejecutar_consulta(sql, params=None):
     """
@@ -509,12 +508,12 @@ def obtener_circuitos(regional=None):
         if regional:
             query = """
                 SELECT DISTINCT TRIM(N.CIRCUITO)
-                FROM CCOMUN B
-                JOIN EPOSTE_AT C ON B.G3E_FID = C.G3E_FID
-                JOIN NORMA N ON C.G3E_FID = N.G3E_FID
-                JOIN CELE_NOR_GRP_CAT E ON E.NORMA = N.NORMA
-                JOIN EINTERRU_AT I ON I.CODIGO = N.CIRCUITO
-                JOIN CCONECTIVIDAD_E Z ON I.G3E_FID = Z.G3E_FID
+                FROM CCOMUN@GTECH B
+                JOIN EPOSTE_AT@GTECH C ON B.G3E_FID = C.G3E_FID
+                JOIN NORMA@GTECH N ON C.G3E_FID = N.G3E_FID
+                JOIN CELE_NOR_GRP_CAT@GTECH E ON E.NORMA = N.NORMA
+                JOIN EINTERRU_AT@GTECH I ON I.CODIGO = N.CIRCUITO
+                JOIN CCONECTIVIDAD_E@GTECH Z ON I.G3E_FID = Z.G3E_FID
                 WHERE B.G3E_FNO = 17100
                   AND B.ESTADO = 'OPERACION'
                   AND C.TIPO LIKE '%PRIMARIO%'
@@ -530,12 +529,12 @@ def obtener_circuitos(regional=None):
         else:
             cur.execute("""
                 SELECT DISTINCT TRIM(N.CIRCUITO)
-                FROM CCOMUN B
-                JOIN EPOSTE_AT C ON B.G3E_FID = C.G3E_FID
-                JOIN NORMA N ON C.G3E_FID = N.G3E_FID
-                JOIN CELE_NOR_GRP_CAT E ON E.NORMA = N.NORMA
-                JOIN EINTERRU_AT I ON I.CODIGO = N.CIRCUITO
-                JOIN CCONECTIVIDAD_E Z ON I.G3E_FID = Z.G3E_FID
+                FROM CCOMUN@GTECH B
+                JOIN EPOSTE_AT@GTECH C ON B.G3E_FID = C.G3E_FID
+                JOIN NORMA@GTECH N ON C.G3E_FID = N.G3E_FID
+                JOIN CELE_NOR_GRP_CAT@GTECH E ON E.NORMA = N.NORMA
+                JOIN EINTERRU_AT@GTECH I ON I.CODIGO = N.CIRCUITO
+                JOIN CCONECTIVIDAD_E@GTECH Z ON I.G3E_FID = Z.G3E_FID
                 WHERE B.G3E_FNO = 17100
                   AND B.ESTADO = 'OPERACION'
                   AND C.TIPO LIKE '%PRIMARIO%'
@@ -562,9 +561,9 @@ def obtener_trafos(circuito=None, regional=None):
 
         sql = """
             SELECT DISTINCT CE.NODO_TRANSFORM_V
-            FROM CCOMUN C
-            JOIN ETRANSFO_AT T ON C.G3E_FID = T.G3E_FID
-            JOIN CCONECTIVIDAD_E CE ON CE.G3E_FID = C.G3E_FID AND CE.G3E_FNO = 20400
+            FROM CCOMUN@GTECH C
+            JOIN ETRANSFO_AT@GTECH T ON C.G3E_FID = T.G3E_FID
+            JOIN CCONECTIVIDAD_E@GTECH CE ON CE.G3E_FID = C.G3E_FID AND CE.G3E_FNO = 20400
             WHERE C.ESTADO = 'OPERACION'
         """
         params = {}
@@ -593,9 +592,9 @@ def obtener_trafos_por_circuito(circuito, regional=None):
     try:
         sql = """
             SELECT DISTINCT CE.NODO_TRANSFORM_V
-            FROM CCOMUN C
-            JOIN ETRANSFO_AT T ON C.G3E_FID = T.G3E_FID
-            JOIN CCONECTIVIDAD_E CE ON CE.G3E_FID = C.G3E_FID AND CE.G3E_FNO = 20400
+            FROM CCOMUN@GTECH C
+            JOIN ETRANSFO_AT@GTECH T ON C.G3E_FID = T.G3E_FID
+            JOIN CCONECTIVIDAD_E@GTECH CE ON CE.G3E_FID = C.G3E_FID AND CE.G3E_FNO = 20400
             WHERE C.ESTADO = 'OPERACION'
               AND CE.CIRCUITO = :circuito
         """
