@@ -1,6 +1,7 @@
 import sys
 import os
 import copy
+from pathlib import Path
 import simplekml
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout,
@@ -8,7 +9,7 @@ from PyQt6.QtWidgets import (
     QColorDialog, QTabWidget, QGroupBox, QMessageBox, QScrollArea
 )
 from PyQt6.QtGui import QIcon, QPixmap
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QUrl
 from .pdf_utils import generar_pdf_trafo
 
 # IMPORTS desde core.py (asegúrate de tener estas funciones implementadas)
@@ -19,8 +20,52 @@ from .core import (
     exportar_kmz_lineas,
     exportar_kmz_por_trafo,
     limpiar_nombre
-    # obtener_datos etc. ya están en core si los necesitas
+    # obtener_datos etc. ya están en core si lo necesitas
 )
+
+_EXPORTADOR_DIR = Path(__file__).resolve().parent
+_PROJECT_ROOT = _EXPORTADOR_DIR.parent
+
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(_PROJECT_ROOT / ".env")
+except ImportError:
+    pass
+
+
+def _resolve_simbologia_dir() -> Path:
+    explicit = os.environ.get("SIMBOLOGIA_DIR", "").strip()
+    if explicit:
+        return Path(os.path.expandvars(explicit)).expanduser().resolve()
+    for nombre in ("Simbologia", "Simobologia"):
+        cand = (_PROJECT_ROOT / nombre).resolve()
+        if cand.is_dir():
+            return cand
+    return (_PROJECT_ROOT / "Simbologia").resolve()
+
+
+SIMBOLOGIA_DIR = _resolve_simbologia_dir()
+
+
+def ruta_simbolo(nombre_archivo: str) -> str:
+    return str(SIMBOLOGIA_DIR / nombre_archivo)
+
+
+def archivo_a_url_qss(ruta_abs: str) -> str:
+    """Ruta local válida para QSS url(...); cadena vacía si no existe el archivo."""
+    p = Path(ruta_abs).resolve()
+    if not p.is_file():
+        return ""
+    return QUrl.fromLocalFile(str(p)).toString()
+
+
+if not SIMBOLOGIA_DIR.is_dir():
+    print(
+        "⚠ Simbología: no existe la carpeta",
+        SIMBOLOGIA_DIR,
+        "— Cree 'Simbologia' junto a manage.py o defina SIMBOLOGIA_DIR en .env.",
+    )
 
 # -------------------------
 # ENTIDADES / CONFIG (puedes reemplazar por tu dict real si lo tienes en otro archivo)
@@ -37,7 +82,7 @@ entidades_config = {
                     ("COOR_GPS_LON", "DOUBLE"), ("COOR_GPS_LAT", "DOUBLE")],
         "etiqueta": "CODIGO",
         "estilo": {
-            "icon_href": r"D:\kmz_generator_project\Simbologia\AISLADEROS.png",
+            "icon_href": ruta_simbolo("AISLADEROS.png"),
             "color": "ff0000ff",
             "scale": 1.2,
             "tipo": "punto"
@@ -51,7 +96,7 @@ entidades_config = {
                     ("COOR_GPS_LON", "DOUBLE"), ("COOR_GPS_LAT", "DOUBLE")],
         "etiqueta": "CODIGO",
         "estilo": {
-            "icon_href": r"D:\kmz_generator_project\Simbologia\CUCHILLAS.png",
+            "icon_href": ruta_simbolo("CUCHILLAS.png"),
             "color": "ff00ffff",
             "scale": 1.1,
             "tipo": "punto"
@@ -64,7 +109,7 @@ entidades_config = {
                     ("UC", "TEXT"), ("COOR_GPS_LON", "DOUBLE"), ("COOR_GPS_LAT", "DOUBLE")],
         "etiqueta": "CODIGO_OPERATIVO",
         "estilo": {
-            "icon_href": r"D:\kmz_generator_project\Simbologia\RECONECTADORES.png",
+            "icon_href": ruta_simbolo("RECONECTADORES.png"),
             "color": "ff00ffff",
             "scale": 2,
             "tipo": "punto"
@@ -80,7 +125,7 @@ entidades_config = {
                       ("OBSERVACIONES", "TEXT"), ("USUARIOS", "LONG"),("COOR_GPS_LON", "DOUBLE"),("COOR_GPS_LAT", "DOUBLE")],
            "etiqueta": "NODO_TRANSFORM_V",
            "estilo": {
-              "icon_href": r"D:\kmz_generator_project\Simbologia\TRAFOS.png",
+              "icon_href": ruta_simbolo("TRAFOS.png"),
                "color": "ff7f7f00",
                "scale": 1.3,
                "tipo": "punto"
@@ -96,7 +141,7 @@ entidades_config = {
                      ("COOR_GPS_LON", "DOUBLE"), ("COOR_GPS_LAT", "DOUBLE")],
            "etiqueta": None,
           "estilo": {
-              "icon_href": r"D:\kmz_generator_project\Simbologia\POSTES_MT.png",
+              "icon_href": ruta_simbolo("POSTES_MT.png"),
               "color": "ff0000ff",
               "scale": 0.9,
               "tipo": "punto"
@@ -112,7 +157,7 @@ entidades_config = {
                     ("UC", "TEXT"), ("TIPO_RED", "TEXT"), ("COOR_GPS_LON", "DOUBLE"), ("COOR_GPS_LAT", "DOUBLE")],
          "etiqueta": None,
          "estilo": {
-             "icon_href": r"D:\kmz_generator_project\Simbologia\POSTES_BT.png",
+             "icon_href": ruta_simbolo("POSTES_BT.png"),
              "color": "ffff0000",
              "scale": 0.9,
              "tipo": "punto"
@@ -159,7 +204,7 @@ entidades_config = {
                ("COOR_GPS_LON", "DOUBLE"), ("COOR_GPS_LAT", "DOUBLE")],
     "etiqueta": None,
     "estilo": {
-        "icon_href": r"D:\kmz_generator_project\Simbologia\POSTES_BT.png",
+        "icon_href": ruta_simbolo("POSTES_BT.png"),
         "color": "ffff0000",
         "scale": 0.9,
         "tipo": "punto"
@@ -177,7 +222,7 @@ entidades_config = {
     ],
     "etiqueta": "NODO_TRANSFORM_V",
     "estilo": {
-        "icon_href": r"D:\kmz_generator_project\Simbologia\TRAFOS.png",
+        "icon_href": ruta_simbolo("TRAFOS.png"),
         "color": "ff7f7f00",
         "scale": 1.3,
         "tipo": "punto"
@@ -377,27 +422,32 @@ class MainWindow(QMainWindow):
     def _build_tab_trafo(self):
         w = QWidget()
         layout = QVBoxLayout()
-        self.tab_trafo.setStyleSheet("""
-            QWidget {
-                background-image: url("D:\kmz_generator_project\Simbologia\FONDO1.jpg");
+        fondo_uri = archivo_a_url_qss(str(SIMBOLOGIA_DIR / "FONDO1.jpg"))
+        fondo_bloque = ""
+        if fondo_uri:
+            fondo_bloque = f"""
+                background-image: url("{fondo_uri}");
                 background-repeat: no-repeat;
                 background-position: center;
-                background-attachment: fixed;
-                background-color: #f0f0f0; /* gris claro, limpio */
-            }
-            QLabel, QComboBox, QPushButton, QLineEdit {
+                background-attachment: fixed;"""
+        self.tab_trafo.setStyleSheet(f"""
+            QWidget {{
+                {fondo_bloque}
+                background-color: #f0f0f0;
+            }}
+            QLabel, QComboBox, QPushButton, QLineEdit {{
                 font-weight: bold;
-                color: #222222; /* gris oscuro para texto */
+                color: #222222;
                 background-color: transparent;
                 border: 1px solid #444;
                 border-radius: 4px;
                 padding: 4px;
-            }
+            }}
         """)
         form = QFormLayout()
         # Logo CENS
         label_icon = QLabel()
-        pixmap_icon = QPixmap("D:\2025\kmz_generator_project\Simbologia\CENS_EPM.jpg")
+        pixmap_icon = QPixmap(ruta_simbolo("CENS_EPM.jpg"))
         if not pixmap_icon.isNull():
             pixmap_icon = pixmap_icon.scaledToHeight(120, Qt.TransformationMode.SmoothTransformation)
             label_icon.setPixmap(pixmap_icon)

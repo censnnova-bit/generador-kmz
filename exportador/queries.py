@@ -111,8 +111,8 @@ queries = {
             C.CONTRATO_INSTALACION, C.SUBREGION, C.MUNICIPIO, C.OBSERVACIONES, E.FASES,
             E.LONGITUD / 1000 AS LONGITUD, AT.TIPO_AISLAMIENTO, E.LOCALIZACION, C.CLASIFICACION_MERCADO,
             E.CIRCUITO, C.REGION,C.UC, C.FECHA_INSTALACION,
-            GetOrdinateValue(G3E_GEOMETRY, 1) AS LON1, GetOrdinateValue(G3E_GEOMETRY, 2) AS LAT1,
-            GetOrdinateValue(G3E_GEOMETRY, 4) AS LON2, GetOrdinateValue(G3E_GEOMETRY, 5) AS LAT2
+            GetOrdinateValue(L.G3E_GEOMETRY, 1) AS LON1, GetOrdinateValue(L.G3E_GEOMETRY, 2) AS LAT1,
+            GetOrdinateValue(L.G3E_GEOMETRY, 4) AS LON2, GetOrdinateValue(L.G3E_GEOMETRY, 5) AS LAT2
         FROM ECON_PRI_LN@GTECH L
         JOIN CCOMUN@GTECH C ON L.G3E_FID = C.G3E_FID
         JOIN ECON_PRI_AT@GTECH AT ON AT.G3E_FID = L.G3E_FID
@@ -126,8 +126,8 @@ queries = {
             E.LOCALIZACION, C.CLASIFICACION_MERCADO, 
             E.CIRCUITO, C.REGION, C.FECHA_INSTALACION,
             E.FASES,
-            GetOrdinateValue(G3E_GEOMETRY, 1) AS LON1, GetOrdinateValue(G3E_GEOMETRY, 2) AS LAT1,
-            GetOrdinateValue(G3E_GEOMETRY, 4) AS LON2, GetOrdinateValue(G3E_GEOMETRY, 5) AS LAT2
+            GetOrdinateValue(L.G3E_GEOMETRY, 1) AS LON1, GetOrdinateValue(L.G3E_GEOMETRY, 2) AS LAT1,
+            GetOrdinateValue(L.G3E_GEOMETRY, 4) AS LON2, GetOrdinateValue(L.G3E_GEOMETRY, 5) AS LAT2
         FROM ECON_SES_LN@GTECH L
         JOIN CCOMUN@GTECH C ON L.G3E_FID = C.G3E_FID
         JOIN ECON_SES_AT@GTECH AT ON AT.G3E_FID = L.G3E_FID
@@ -160,10 +160,10 @@ queries = {
            C.SUBREGION, C.MUNICIPIO, E.LONGITUD / 1000 AS LONGITUD, 
            E.NODO_TRANSFORM_V, E.LOCALIZACION, C.CLASIFICACION_MERCADO, 
            E.CIRCUITO, C.REGION, C.FECHA_INSTALACION,E.FASES,
-           GetOrdinateValue(G3E_GEOMETRY, 1) AS LON1,
-           GetOrdinateValue(G3E_GEOMETRY, 2) AS LAT1,
-           GetOrdinateValue(G3E_GEOMETRY, 4) AS LON2,
-           GetOrdinateValue(G3E_GEOMETRY, 5) AS LAT2
+           GetOrdinateValue(L.G3E_GEOMETRY, 1) AS LON1,
+           GetOrdinateValue(L.G3E_GEOMETRY, 2) AS LAT1,
+           GetOrdinateValue(L.G3E_GEOMETRY, 4) AS LON2,
+           GetOrdinateValue(L.G3E_GEOMETRY, 5) AS LAT2
     FROM ECON_SES_LN@GTECH L
     JOIN CCOMUN@GTECH C ON L.G3E_FID = C.G3E_FID
     JOIN ECON_SES_AT@GTECH AT ON AT.G3E_FID = L.G3E_FID

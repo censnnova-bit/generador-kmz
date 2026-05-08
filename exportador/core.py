@@ -161,7 +161,7 @@ def obtener_lon_lat_desde_fila(cols, fila):
 
 def obtener_coords_linea(cols, fila):
     """
-    Busca LON1/LAT1/LON2/LAT2 o GetOrdinate equivalents.
+    Busca LON1/LAT1/LON2/LAT2 u homólogos (case-insensitive sobre nombres de columna Oracle).
     Retorna tuple (lon1, lat1, lon2, lat2) o (None,)*4
     """
     lon1_idx = find_col_index(cols, ["LON1", "COOR_X1", "X1"])
@@ -175,7 +175,7 @@ def obtener_coords_linea(cols, fila):
         except Exception:
             return (None, None, None, None)
 
-    # fallback: if last four columns are coords (common in queries)
+    # fallback: si las últimas 4 columnas son coords (consultas tipo RED_* con GetOrdinateValue al final)
     try:
         lon1 = float(fila[-4])
         lat1 = float(fila[-3])
@@ -260,6 +260,8 @@ def exportar_kmz_lineas(entidad, circuito, regional, estilo, usar_altura, entida
             line = folder.newlinestring(coords=[(lon1, lat1, z), (lon2, lat2, z)])
             line.altitudemode = simplekml.AltitudeMode.relativetoground if usar_altura else simplekml.AltitudeMode.clamptoground
             line.extrude = usar_altura
+            if not usar_altura:
+                line.tessellate = 1
 
             etiqueta = entidades_config.get(entidad, {}).get("etiqueta")
             if etiqueta:
@@ -447,31 +449,19 @@ def exportar_kmz_por_trafo(salida, codigo_trafo, circuito=None, estilos=None, en
 
         estilo_red = estilos.get("RED_BT_BY_TRAFO", {}) or entidades_config.get("RED_BT_BY_TRAFO", {}).get("estilo", {})
         color_red_hex = normalize_color_to_hex(estilo_red.get("color"))
-        width_red = estilo_red.get("width", 2.5)
-
-        # indices para líneas: preferir LON1/LAT1/LON2/LAT2
-        def _line_indices(cols):
-            if not cols:
-                return -4, -3, -2, -1
-            if set(("LON1", "LAT1", "LON2", "LAT2")).issubset(set(cols)):
-                return cols.index("LON1"), cols.index("LAT1"), cols.index("LON2"), cols.index("LAT2")
-            # fallback a últimas 4 columnas
-            return len(cols)-4, len(cols)-3, len(cols)-2, len(cols)-1
-
-        lon1_i, lat1_i, lon2_i, lat2_i = _line_indices(cols_r)
+        width_red = float(estilo_red.get("width", 2.5) or 2.5)
 
         for row in redes:
             try:
-                lon1 = safe_float(row[lon1_i]) if lon1_i < len(row) else None
-                lat1 = safe_float(row[lat1_i]) if lat1_i < len(row) else None
-                lon2 = safe_float(row[lon2_i]) if lon2_i < len(row) else None
-                lat2 = safe_float(row[lat2_i]) if lat2_i < len(row) else None
+                lon1, lat1, lon2, lat2 = obtener_coords_linea(cols_r, row)
                 if None in (lon1, lat1, lon2, lat2):
                     print("⚠ Línea sin coords completas, saltando:", row)
                     continue
-                line = folder_red.newlinestring(coords=[(lon1, lat1), (lon2, lat2)])
+                line = folder_red.newlinestring(coords=[(lon1, lat1, 0), (lon2, lat2, 0)])
+                line.altitudemode = simplekml.AltitudeMode.clamptoground
+                line.tessellate = 1
                 line.style.linestyle.color = kml_color(color_red_hex)
-                line.style.linestyle.width = width_red
+                line.style.linestyle.width = max(width_red, 1.0)
                 etiqueta = entidades_config.get("RED_BT_BY_TRAFO", {}).get("etiqueta")
                 if etiqueta and etiqueta in cols_r:
                     line.name = limpiar_texto_xml(row[cols_r.index(etiqueta)])
