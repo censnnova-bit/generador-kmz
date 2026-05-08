@@ -1,221 +1,325 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Generador KMZ Web</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #eef2f3;
-            padding: 40px;
-        }
-        h2 {
-            text-align: center;
-            color: #333;
-        }
-        .formulario {
-            background-color: #fff;
-            padding: 20px;
-            margin: 30px auto;
-            border-radius: 8px;
-            max-width: 600px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        label {
-            display: block;
-            margin-top: 10px;
-            font-weight: bold;
-        }
-        input, select, button {
-            width: 100%;
-            padding: 8px;
-            margin-top: 5px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-        }
-        button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            margin-top: 15px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .checkbox-group {
-            margin-top: 10px;
-        }
-        .checkbox-group label {
-            font-weight: normal;
-            display: block;
-        }
-        .color-picker {
-            margin-top: 10px;
-        }
-        .separador {
-            height: 2px;
-            background-color: #ccc;
-            margin: 40px 0;
-        }
-    </style>
-</head>
-<body>
-    <h2>Generador de KMZ</h2>
+{% extends "base.html" %}
+{% load static %}
 
-    <div class="formulario">
-        <h3>KMZ / PDF por Transformador</h3>
-        <form method="GET" action="/generar_kmz/">
-            <label for="regional">Regional:</label>
-            <select name="regional" id="regional" required>
-                <option value="">Seleccione una regional</option>
-                <option value="CUCUTA">CUCUTA</option>
-                <option value="AGUACHICA">AGUACHICA</option>
-                <option value="PAMPLONA">PAMPLONA</option>
-                <option value="TIBU">TIBU</option>
-                <option value="OCAÑA">OCAÑA</option>
-            </select>
+{% block title %}Generador KMZ — CENS{% endblock %}
 
-            <label for="circuito">Circuito:</label>
-            <select name="circuito" id="circuito" required>
-                <option value="">Seleccione un circuito</option>
-            </select>
+{% block branding_heading %}Generador de KMZ{% endblock %}
+{% block branding_tagline %}Exportación de capas geográficas (KMZ / PDF por circuito o transformador){% endblock %}
 
-            <label for="codigo_trafo">Código Trafo:</label>
-            <select name="codigo_trafo" id="codigo_trafo" required>
-                <option value="">Seleccione un trafo</option>
-            </select>
+{% block extra_css %}
+<style>
+    .kmz-lead {
+        text-align: center;
+        font-size: 1.05em;
+        color: var(--color-text-sub);
+        max-width: 720px;
+        margin: 0 auto 28px;
+        line-height: 1.5;
+    }
 
-            <div class="color-picker">
-                <label for="color_red_bt">Color RED_BT:</label>
-                <input type="color" id="color_red_bt" name="color_red_bt" value="#ff0000">
-            </div>
+    .form-card-kmz {
+        background: var(--bg-container);
+        color: var(--color-text);
+        border: 1px solid var(--border-card);
+        border-radius: 8px;
+        padding: 24px 28px;
+        margin: 24px auto;
+        max-width: 640px;
+        box-shadow: 0 4px 18px var(--shadow-container);
+        transition: background 0.3s, border-color 0.3s;
+    }
 
-            <button type="submit">Generar KMZ por Trafo</button>
-        </form>
+    .form-card-kmz h3 {
+        font-size: 1.25em;
+        font-weight: 700;
+        color: var(--color-primary);
+        margin-bottom: 18px;
+        text-align: center;
+    }
 
-        <!-- Nuevo formulario solo para PDF -->
-        <form method="GET" action="/generar_pdf_trafo/" style="margin-top:15px;">
-            <input type="hidden" name="regional" id="pdf_regional">
-            <input type="hidden" name="circuito" id="pdf_circuito">
-            <input type="hidden" name="codigo_trafo" id="pdf_codigo_trafo">
-            <button type="submit">Generar PDF por Trafo (A3)</button>
-        </form>
-    </div>
+    .form-card-kmz label.field-label-kmz {
+        display: block;
+        margin-top: 14px;
+        font-weight: 600;
+        color: var(--color-text);
+        font-size: 0.95em;
+    }
 
-    <div class="separador"></div>
+    .form-card-kmz select,
+    .form-card-kmz input[type="text"] {
+        width: 100%;
+        padding: 10px 14px;
+        margin-top: 6px;
+        border-radius: 8px;
+        border: 2px solid var(--border-card);
+        background: var(--bg-input);
+        color: var(--color-text);
+        font-family: inherit;
+        font-size: 15px;
+        transition: border-color 0.2s;
+    }
 
-    <div class="formulario">
-        <h3>KMZ por Circuito Total</h3>
-        <form method="GET" action="/generar_kmz_total/">
-            <label for="regional_total">Regional:</label>
-            <select name="regional" id="regional_total" required>
-                <option value="">Seleccione una regional</option>
-                <option value="CUCUTA">CUCUTA</option>
-                <option value="AGUACHICA">AGUACHICA</option>
-                <option value="PAMPLONA">PAMPLONA</option>
-                <option value="TIBU">TIBU</option>
-                <option value="OCAÑA">OCAÑA</option>
-            </select>
+    .form-card-kmz select:focus,
+    .form-card-kmz input[type="text"]:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 2px rgba(0, 102, 51, 0.12);
+    }
 
-            <label for="circuito_total">Circuito:</label>
-            <select name="circuito" id="circuito_total" required>
-                <option value="">Seleccione un circuito</option>
-            </select>
+    [data-theme="dark"] .form-card-kmz select:focus,
+    [data-theme="dark"] .form-card-kmz input[type="text"]:focus {
+        box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.2);
+    }
 
-            <label for="nombre_kmz">Nombre del archivo KMZ:</label>
-            <input type="text" name="nombre_kmz" id="nombre_kmz" required>
+    .form-card-kmz input[type="color"] {
+        width: 100%;
+        max-width: 120px;
+        height: 40px;
+        margin-top: 8px;
+        padding: 2px;
+        border: 2px solid var(--border-card);
+        border-radius: 8px;
+        background: var(--bg-input);
+        cursor: pointer;
+    }
 
-            <div class="checkbox-group">
-                <label><input type="checkbox" name="entidades" value="AISLADEROS"> AISLADEROS</label>
-                <label><input type="checkbox" name="entidades" value="CUCHILLAS"> CUCHILLAS</label>
-                <label><input type="checkbox" name="entidades" value="RECONECTADORES"> RECONECTADORES</label>
-                <label><input type="checkbox" name="entidades" value="TRAFOS"> TRAFOS</label>
-                <label><input type="checkbox" name="entidades" value="POSTES_MT"> POSTES_MT</label>
-                <label><input type="checkbox" name="entidades" value="POSTES_BT"> POSTES_BT</label>
-                <label><input type="checkbox" name="entidades" value="RED_MT"> RED_MT</label>
-                <label><input type="checkbox" name="entidades" value="RED_BT"> RED_BT</label>
-            </div>
+    .checkbox-group-kmz {
+        margin-top: 16px;
+        padding: 14px;
+        border-radius: 8px;
+        border: 1px solid var(--border-card);
+        background: var(--bg-page);
+    }
 
-            <div class="color-picker">
-                <label for="color_red_mt">Color RED_MT:</label>
-                <input type="color" id="color_red_mt" name="color_red_mt" value="#ff0000">
-                <label for="color_red_bt2">Color RED_BT:</label>
-                <input type="color" id="color_red_bt2" name="color_red_bt" value="#ff0000">
-            </div>
+    .checkbox-group-kmz .field-label-kmz:first-of-type {
+        margin-top: 0;
+    }
 
-            <button type="submit">Generar KMZ por Circuito Total</button>
-        </form>
-    </div>
+    .checkbox-group-kmz label.row-check {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 400;
+        margin-top: 10px;
+        cursor: pointer;
+        color: var(--color-text);
+    }
 
-    <script>
-        function cargarCircuitos(selectRegionalId, selectCircuitoId) {
-            const regional = document.getElementById(selectRegionalId).value;
-            const circuitoSelect = document.getElementById(selectCircuitoId);
-            circuitoSelect.innerHTML = '<option value="">Cargando...</option>';
+    .checkbox-group-kmz label.row-check:first-of-type {
+        margin-top: 0;
+    }
 
-            fetch(`/api/circuitos/?regional=${regional}`)
-                .then(response => response.json())
-                .then(data => {
-                    circuitoSelect.innerHTML = '<option value="">Seleccione un circuito</option>';
-                    data.circuitos.forEach(c => {
-                        const option = document.createElement('option');
-                        option.value = c;
-                        option.textContent = c;
-                        circuitoSelect.appendChild(option);
-                    });
-                })
-                .catch(error => {
-                    circuitoSelect.innerHTML = '<option value="">Error al cargar</option>';
-                    console.error("Error cargando circuitos:", error);
+    .checkbox-group-kmz input[type="checkbox"] {
+        width: auto;
+        accent-color: var(--color-primary);
+    }
+
+    .color-picker-kmz {
+        margin-top: 14px;
+    }
+
+    .btn-kmz-submit {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        margin: 18px 0 0;
+        padding: 14px 24px;
+        font-size: 16px;
+        font-weight: 600;
+        text-align: center;
+        background: var(--bg-btn);
+        border: 2px solid var(--color-primary);
+        color: var(--color-primary);
+        border-radius: 8px;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 102, 51, 0.1);
+    }
+
+    .btn-kmz-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 102, 51, 0.2);
+        background: var(--color-primary);
+        color: #fff;
+    }
+
+    [data-theme="dark"] .btn-kmz-submit:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+        color: #fff;
+    }
+
+    .separador-kmz {
+        height: 2px;
+        max-width: 640px;
+        margin: 36px auto;
+        background: var(--border-card);
+        border: none;
+    }
+
+    .form-secondary {
+        margin-top: 14px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<p class="kmz-lead">Seleccione regional, circuito y opciones para generar archivos KMZ o PDF según los estándares de visualización definidos por CENS.</p>
+
+<div class="form-card-kmz">
+    <h3>KMZ / PDF por transformador</h3>
+    <form method="get" action="/generar_kmz/">
+        <label class="field-label-kmz" for="regional">Regional</label>
+        <select name="regional" id="regional" required>
+            <option value="">Seleccione una regional</option>
+            <option value="CUCUTA">CUCUTA</option>
+            <option value="AGUACHICA">AGUACHICA</option>
+            <option value="PAMPLONA">PAMPLONA</option>
+            <option value="TIBU">TIBU</option>
+            <option value="OCAÑA">OCAÑA</option>
+        </select>
+
+        <label class="field-label-kmz" for="circuito">Circuito</label>
+        <select name="circuito" id="circuito" required>
+            <option value="">Seleccione un circuito</option>
+        </select>
+
+        <label class="field-label-kmz" for="codigo_trafo">Código trafo</label>
+        <select name="codigo_trafo" id="codigo_trafo" required>
+            <option value="">Seleccione un trafo</option>
+        </select>
+
+        <div class="color-picker-kmz">
+            <label class="field-label-kmz" for="color_red_bt">Color RED_BT</label>
+            <input type="color" id="color_red_bt" name="color_red_bt" value="#ff0000">
+        </div>
+
+        <button type="submit" class="btn-kmz-submit">Generar KMZ por trafo</button>
+    </form>
+
+    <form method="get" action="/generar_pdf_trafo/" class="form-secondary">
+        <input type="hidden" name="regional" id="pdf_regional">
+        <input type="hidden" name="circuito" id="pdf_circuito">
+        <input type="hidden" name="codigo_trafo" id="pdf_codigo_trafo">
+        <button type="submit" class="btn-kmz-submit">Generar PDF por trafo (A3)</button>
+    </form>
+</div>
+
+<hr class="separador-kmz" aria-hidden="true">
+
+<div class="form-card-kmz">
+    <h3>KMZ por circuito total</h3>
+    <form method="get" action="/generar_kmz_total/">
+        <label class="field-label-kmz" for="regional_total">Regional</label>
+        <select name="regional" id="regional_total" required>
+            <option value="">Seleccione una regional</option>
+            <option value="CUCUTA">CUCUTA</option>
+            <option value="AGUACHICA">AGUACHICA</option>
+            <option value="PAMPLONA">PAMPLONA</option>
+            <option value="TIBU">TIBU</option>
+            <option value="OCAÑA">OCAÑA</option>
+        </select>
+
+        <label class="field-label-kmz" for="circuito_total">Circuito</label>
+        <select name="circuito" id="circuito_total" required>
+            <option value="">Seleccione un circuito</option>
+        </select>
+
+        <label class="field-label-kmz" for="nombre_kmz">Nombre del archivo KMZ</label>
+        <input type="text" name="nombre_kmz" id="nombre_kmz" required autocomplete="off">
+
+        <div class="checkbox-group-kmz">
+            <span class="field-label-kmz">Capas a incluir</span>
+            <label class="row-check"><input type="checkbox" name="entidades" value="AISLADEROS"> AISLADEROS</label>
+            <label class="row-check"><input type="checkbox" name="entidades" value="CUCHILLAS"> CUCHILLAS</label>
+            <label class="row-check"><input type="checkbox" name="entidades" value="RECONECTADORES"> RECONECTADORES</label>
+            <label class="row-check"><input type="checkbox" name="entidades" value="TRAFOS"> TRAFOS</label>
+            <label class="row-check"><input type="checkbox" name="entidades" value="POSTES_MT"> POSTES_MT</label>
+            <label class="row-check"><input type="checkbox" name="entidades" value="POSTES_BT"> POSTES_BT</label>
+            <label class="row-check"><input type="checkbox" name="entidades" value="RED_MT"> RED_MT</label>
+            <label class="row-check"><input type="checkbox" name="entidades" value="RED_BT"> RED_BT</label>
+        </div>
+
+        <div class="color-picker-kmz">
+            <label class="field-label-kmz" for="color_red_mt">Color RED_MT</label>
+            <input type="color" id="color_red_mt" name="color_red_mt" value="#ff0000">
+            <label class="field-label-kmz" for="color_red_bt2">Color RED_BT</label>
+            <input type="color" id="color_red_bt2" name="color_red_bt" value="#ff0000">
+        </div>
+
+        <button type="submit" class="btn-kmz-submit">Generar KMZ por circuito total</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function cargarCircuitos(selectRegionalId, selectCircuitoId) {
+        const regional = document.getElementById(selectRegionalId).value;
+        const circuitoSelect = document.getElementById(selectCircuitoId);
+        circuitoSelect.innerHTML = '<option value="">Cargando...</option>';
+
+        fetch(`/api/circuitos/?regional=${regional}`)
+            .then(response => response.json())
+            .then(data => {
+                circuitoSelect.innerHTML = '<option value="">Seleccione un circuito</option>';
+                data.circuitos.forEach(c => {
+                    const option = document.createElement('option');
+                    option.value = c;
+                    option.textContent = c;
+                    circuitoSelect.appendChild(option);
                 });
-        }
+            })
+            .catch(error => {
+                circuitoSelect.innerHTML = '<option value="">Error al cargar</option>';
+                console.error("Error cargando circuitos:", error);
+            });
+    }
 
-        function cargarTrafos() {
-            const regional = document.getElementById("regional").value;
-            const circuito = document.getElementById("circuito").value;
-            const trafoSelect = document.getElementById("codigo_trafo");
-            trafoSelect.innerHTML = '<option value="">Cargando...</option>';
+    function cargarTrafos() {
+        const regional = document.getElementById("regional").value;
+        const circuito = document.getElementById("circuito").value;
+        const trafoSelect = document.getElementById("codigo_trafo");
+        trafoSelect.innerHTML = '<option value="">Cargando...</option>';
 
-            fetch(`/api/trafos/?regional=${regional}&circuito=${circuito}`)
-                .then(response => response.json())
-                .then(data => {
-                    trafoSelect.innerHTML = '<option value="">Seleccione un trafo</option>';
-                    data.trafos.forEach(t => {
-                        const option = document.createElement('option');
-                        option.value = t;
-                        option.textContent = t;
-                        trafoSelect.appendChild(option);
-                    });
-                    syncTrafoForm(); // sincronizar al cargar
-                })
-                .catch(error => {
-                    trafoSelect.innerHTML = '<option value="">Error al cargar</option>';
-                    console.error("Error cargando trafos:", error);
+        fetch(`/api/trafos/?regional=${regional}&circuito=${circuito}`)
+            .then(response => response.json())
+            .then(data => {
+                trafoSelect.innerHTML = '<option value="">Seleccione un trafo</option>';
+                data.trafos.forEach(t => {
+                    const option = document.createElement('option');
+                    option.value = t;
+                    option.textContent = t;
+                    trafoSelect.appendChild(option);
                 });
-        }
+                syncTrafoForm();
+            })
+            .catch(error => {
+                trafoSelect.innerHTML = '<option value="">Error al cargar</option>';
+                console.error("Error cargando trafos:", error);
+            });
+    }
 
-        function syncTrafoForm() {
-            document.getElementById("pdf_regional").value = document.getElementById("regional").value;
-            document.getElementById("pdf_circuito").value = document.getElementById("circuito").value;
-            document.getElementById("pdf_codigo_trafo").value = document.getElementById("codigo_trafo").value;
-        }
+    function syncTrafoForm() {
+        document.getElementById("pdf_regional").value = document.getElementById("regional").value;
+        document.getElementById("pdf_circuito").value = document.getElementById("circuito").value;
+        document.getElementById("pdf_codigo_trafo").value = document.getElementById("codigo_trafo").value;
+    }
 
-        document.getElementById("regional").addEventListener("change", () => {
-            cargarCircuitos("regional", "circuito");
-            syncTrafoForm();
-        });
+    document.getElementById("regional").addEventListener("change", () => {
+        cargarCircuitos("regional", "circuito");
+        syncTrafoForm();
+    });
 
-        document.getElementById("circuito").addEventListener("change", () => {
-            cargarTrafos();
-            syncTrafoForm();
-        });
+    document.getElementById("circuito").addEventListener("change", () => {
+        cargarTrafos();
+        syncTrafoForm();
+    });
 
-        document.getElementById("codigo_trafo").addEventListener("change", syncTrafoForm);
+    document.getElementById("codigo_trafo").addEventListener("change", syncTrafoForm);
 
-        document.getElementById("regional_total").addEventListener("change", () => {
-            cargarCircuitos("regional_total", "circuito_total");
-        });
-    </script>
-</body>
-</html>
+    document.getElementById("regional_total").addEventListener("change", () => {
+        cargarCircuitos("regional_total", "circuito_total");
+    });
+</script>
+{% endblock %}

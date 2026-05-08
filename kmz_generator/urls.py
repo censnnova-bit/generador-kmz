@@ -1,8 +1,8 @@
-
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path
 from exportador import views  # ← Importar desde la app correcta
-
 
 
 urlpatterns = [
@@ -13,3 +13,9 @@ urlpatterns = [
     path('api/trafos/', views.api_trafos, name='api_trafos'),
     path("generar_pdf_trafo/", views.generar_pdf_trafo_view, name="generar_pdf_trafo"),
 ]
+
+if settings.DEBUG and settings.STATICFILES_DIRS:
+    urlpatterns += static(
+        settings.STATIC_URL,
+        document_root=settings.STATICFILES_DIRS[0],
+    )
